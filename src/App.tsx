@@ -16,14 +16,25 @@ import {
 
 
 function App() {
-  const { data: rates, isLoading } = useCurrencyRates();
-  const [amount, setAmount] = useState(0);
+  const { data: rates, isLoading, error, isError } = useCurrencyRates();
+  const [amount, setAmount] = useState(1);
   const [selectedCurrency, setSelectedCurrency] = useState('EUR');
 
-  if (isLoading || (rates == null)) return <div>Loading...</div>;
+  if (isError) {
+    const errorMessage = (error as Error).message;
+    return <div>{errorMessage}</div>;
+  }
 
-  const rateForSelectedCurrency = rates.find(rate => rate.currency === selectedCurrency)?.rate;
-  const convertedAmount = (amount / (rateForSelectedCurrency ?? 1)).toFixed(2);
+  if (isLoading || (rates == null) || rates.length === 0) return <div>Loading...</div>;
+
+  const selectedCurrencyData = rates.find(rate => rate.currency === selectedCurrency);
+  if (selectedCurrencyData == null) return <div>Error: Currency data not found.</div>;
+
+  const rate = selectedCurrencyData.rate;
+  const currencyAmount = selectedCurrencyData.amount;
+
+  const rateForSelectedCurrency = rate / currencyAmount;
+  const convertedAmount = (amount / rateForSelectedCurrency).toFixed(2);
 
   return (
     <Container>
@@ -45,14 +56,17 @@ function App() {
           <ConversionIcon>=</ConversionIcon>
           <ConversionSegment>
             <FixedWidthAmount>
-              <ConversionOutput>{convertedAmount}</ConversionOutput>
+              <ConversionOutput>{isNaN(parseFloat(convertedAmount)) ? '0' : convertedAmount}</ConversionOutput>
             </FixedWidthAmount>
             <FormSelect defaultValue='EUR' onChange={e => { setSelectedCurrency(e.target.value); }}>
-              {rates.map(rate => (
-                <option key={rate.currency} value={rate.currency}>
-                  {rate.currency}
-                </option>
-              ))}
+              {rates
+                .slice()
+                .sort((a, b) => a.currency.localeCompare(b.currency))
+                .map(rate => (
+                  <option key={rate.currency} value={rate.currency}>
+                    {rate.currency}
+                  </option>
+                ))}
             </FormSelect>
           </ConversionSegment>
         </ConversionPhrase>

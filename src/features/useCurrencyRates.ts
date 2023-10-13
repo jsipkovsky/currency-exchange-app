@@ -10,6 +10,10 @@ interface CurrencyRate {
 
 const fetchRates = async (): Promise<CurrencyRate[]> => {
   const response = await fetch(`${BASE_URL}/api/currency-rates`);
+  if (!response.ok) {
+    throw new Error(`Server responded with a ${response.status}`);
+  }
+
   const data = await response.text();
   // Parse text by lines, skip first two lines, then parse each line by '|'
   const lines = data.split('\n').filter(line => line.trim() !== '').slice(2);
